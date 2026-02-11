@@ -20,6 +20,6 @@ if __name__ == "__main__":
 # make command line smaller, only show last sent command OR error message
 # add status updates and faults underneath sample rate in aidan pic 
 
-
+# change start recording button to stop recording after its clicked
 
 # power 
