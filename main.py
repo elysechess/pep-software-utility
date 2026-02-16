@@ -1,11 +1,21 @@
 import sys
 from PySide6.QtWidgets import QApplication
 from mainWindow import MainWindow
+from controller import Controller
+from usb import USBBackend
+from data import CSVLogger
 
 def main():
     app = QApplication(sys.argv)
-    win = MainWindow()
+
+    usb = USBBackend()
+    logger = CSVLogger()
+    controller = Controller(usb, logger)
+
+
+    win = MainWindow(controller)
     win.show()
+    
     sys.exit(app.exec())
 
 if __name__ == "__main__":
@@ -17,7 +27,6 @@ if __name__ == "__main__":
 # motor voltage
 # random
 
-# make command line smaller, only show last sent command OR error message
 # add status updates and faults underneath sample rate in aidan pic 
 
 # change start recording button to stop recording after its clicked
