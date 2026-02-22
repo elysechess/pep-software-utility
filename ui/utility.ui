@@ -198,6 +198,16 @@
          </widget>
         </item>
         <item>
+         <widget class="QComboBox" name="COMselect"/>
+        </item>
+        <item>
+         <widget class="QPushButton" name="connectButton">
+          <property name="text">
+           <string>CONNECT TO BOARD</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="pushButton_3">
           <property name="styleSheet">
            <string notr="true">background-color: rgb(255, 0, 0);

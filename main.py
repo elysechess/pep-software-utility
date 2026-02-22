@@ -1,9 +1,9 @@
 import sys
 from PySide6.QtWidgets import QApplication
 from mainWindow import MainWindow
-from controller import Controller
-from usb import USBBackend
-from data import CSVLogger
+from controller.controller import Controller
+from usb.usb import USBBackend
+from data.csv import CSVLogger
 
 def main():
     app = QApplication(sys.argv)

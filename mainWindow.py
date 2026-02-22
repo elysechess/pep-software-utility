@@ -4,6 +4,7 @@ from PySide6.QtCore import QFile, QTimer
 import pyqtgraph as pg
 import random
 import time
+import serial.tools.list_ports
 
 class UiLoader(QUiLoader):
     def createWidget(self, className, parent=None, name=""):
@@ -22,6 +23,7 @@ class MainWindow(QMainWindow):
         self._load_ui()
         self._setup_plots()
         self._connect_signals()
+        self._refresh_ports()
         self._start_fake_data()        
 
     def _load_ui(self):
@@ -55,8 +57,32 @@ class MainWindow(QMainWindow):
     #     self.ui.startButton.clicked.connect(self._start_recording)
     #     self.ui.stopButton.clicked.connect(self._stop_recording)
         self.ui.terminalLineEdit.returnPressed.connect(self._send_command)
+        self.ui.connectButton.clicked.connect(self._connect_to_board)
         self.controller.new_sample.connect(self._update_graphs)
-        self.controller.status_message.connect(self._show_message)
+        self.controller.connection_status_update.connect(self._log_connection_status)
+
+    def _log_connection_status(self, connected : bool):
+        if connected:
+            self._update_terminal("USB connection successful.")
+        else:
+            self._update_terminal("USB connection unsuccessful.")
+
+    def _refresh_ports(self):
+
+        self.ui.COMselect.clear()
+
+        ports = serial.tools.list_ports.comports()
+
+        if not ports:
+            self.ui.COMselect.addItem("No ports found")
+            self.ui.COMselect.setEnabled(False)
+            return
+
+        self.ui.COMselect.setEnabled(True)
+
+        for port in ports:
+            display_text = f"{port.device} - {port.description}"
+            self.ui.COMselect.addItem(display_text, port.device)
 
     def _send_command(self):
         cmd = self.ui.terminalLineEdit.text()
@@ -68,12 +94,19 @@ class MainWindow(QMainWindow):
 
         # this is where you'd emit to USB worker
 
+    def _connect_to_board(self):
+        port = self.ui.COMselect.currentData()
+        self.controller._connect_usb(port)
+
     def _update_terminal(self, new_cmd):
         self.ui.termLabel5.setText(self.ui.termLabel4.text())
         self.ui.termLabel4.setText(self.ui.termLabel3.text())
         self.ui.termLabel3.setText(self.ui.termLabel2.text())
         self.ui.termLabel2.setText(self.ui.termLabel1.text())
         self.ui.termLabel1.setText(new_cmd)
+
+    def _update_graphs(self):
+        pass
 
 
     # def _start_recording(self):
