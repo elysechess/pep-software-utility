@@ -15,7 +15,7 @@ class USBBackend(QObject):
 
     def connect(self, port: str, baudrate: int = 115200):
         try:
-            print(port)
+            # print(port)
             self.ser = serial.Serial(port, baudrate, timeout=0)
 
             if not self.ser.is_open:
@@ -45,7 +45,6 @@ class USBBackend(QObject):
             try:
                 line = self.ser.readline().decode().strip()
                 if line:
-                    print(line)
                     self.message_received.emit(line)
             except UnicodeDecodeError:
                 pass

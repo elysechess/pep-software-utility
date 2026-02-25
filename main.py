@@ -22,13 +22,7 @@ if __name__ == "__main__":
     main()
 
 
-# current speed + target speed on same graph
-# DC bus current (DC power lines to the motors) - input power
-# motor voltage
-# random
 
 # add status updates and faults underneath sample rate in aidan pic 
 
 # change start recording button to stop recording after its clicked
-
-# power 
