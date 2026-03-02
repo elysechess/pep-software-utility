@@ -1,17 +1,20 @@
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, Signal, QTimer
+import time
 
 class Controller(QObject):
     graph_update = Signal(float, float, float, float)
     dashboard_update = Signal(float, float, float, float, float)
     connection_status_update = Signal(bool)
 
-    def __init__(self, usb, logger):
+    def __init__(self, usb):
         super().__init__()
         self.usb = usb
-        self.logger = logger
+
+        self.latest_data = {}
+        self.logging_timer = QTimer()
+        self.logging_timer.timeout.connect(self._log)
 
         self._connect_signals()
-
 
     def _connect_signals(self):
         self.usb.message_received.connect(self._parse_packet)
@@ -29,15 +32,44 @@ class Controller(QObject):
     def send_message(self, cmd):
         self.usb.send(cmd)
 
+    def _start_logging(self, fields, sample_rate):
+        
+        # Create CSV file
+
+        # Start logging timer
+        interval_ms = int(1000 / sample_rate)
+        self.logging_timer.start(interval_ms)
+
+    def _log(self):
+
+        # log self.latest_data
+        print("logignf")
+
+    def _end_logging(self):
+
+        # Stop logging timer
+        self.logging_timer.stop()
+
     # Build this out
     def _parse_packet(self, message : str):
 
         # print(message) 
     
-        bv, bc, pva, pvb, pvc, pca, pbc, pcc, ts, a_s, temp = map(float, message.split(","))
+        bv, bc, pva, pvb, pvc, pca, pcb, pcc, ts, a_s, temp = map(float, message.split(","))
         mv = (pva * pvb * pvc) / 3 # motor voltage - must calculate
-        mc = (pca * pbc * pcc) / 3 # motor current - must calculate
+        mc = (pca * pcb * pcc) / 3 # motor current - must calculate
+
+        self.latest_data = {
+            "Bus Voltage": bv,
+            "Bus Current": bc,
+            "Phase Voltages": [pva, pvb, pvc],
+            "Phase Currents": [pca, pcb, pcc],
+            "Target Speed": ts,
+            "Actual Speed": a_s,
+            "Board Temperature": temp,
+            "Fault Mask": None,
+            "Warning Mask": None
+        }
 
         self.graph_update.emit(ts, a_s, bc, mv)
         self.dashboard_update.emit(bv, bc, mv, mc, temp)
-        # self.logger.log(packet)

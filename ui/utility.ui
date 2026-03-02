@@ -307,7 +307,7 @@
             </layout>
            </item>
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,4">
+            <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="4,4,2">
              <item>
               <widget class="QLabel" name="label_7">
                <property name="text">
@@ -316,7 +316,14 @@
               </widget>
              </item>
              <item>
-              <widget class="QLineEdit" name="lineEdit"/>
+              <widget class="QLineEdit" name="sampleRate"/>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_10">
+               <property name="text">
+                <string>Hz</string>
+               </property>
+              </widget>
              </item>
             </layout>
            </item>

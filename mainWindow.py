@@ -83,12 +83,55 @@ class MainWindow(QMainWindow):
         }
 
     def _connect_signals(self):
-        # self.ui.recordButton.clicked.connect(self._record_session)
+        self.ui.recordButton.clicked.connect(self._record_session)
         self.ui.terminalLineEdit.returnPressed.connect(self._send_command)
         self.ui.connectButton.clicked.connect(self._connect_to_board)
         self.controller.graph_update.connect(self._update_graphs)
         self.controller.dashboard_update.connect(self._update_dashboard)
         self.controller.connection_status_update.connect(self._log_connection_status)
+
+    def _record_session(self):
+        if not self.ui.sampleRate.text():
+            return
+        
+        if self.ui.recordButton.text() == "START RECORDING":
+            self.ui.recordButton.setText("END RECORDING")
+
+            # Prepare CSV file inputs
+            fields = {
+                "Bus Voltage": False,
+                "Bus Current": False,
+                "Phase Voltages": False,
+                "Phase Currents": False,
+                "Target Speed": False,
+                "Actual Speed": False,
+                "Board Temperature": False,
+                "Fault Mask": False,
+                "Warning Mask": False
+            }
+            if self.ui.busVoltageCheck.isChecked():
+                fields["Bus Voltage"] = True
+            if self.ui.busCurrentCheck.isChecked():
+                fields["Bus Current"] = True
+            if self.ui.phaseVoltagesCheck.isChecked():
+                fields["Phase Voltages"] = True
+            if self.ui.phaseCurrentsCheck.isChecked():
+                fields["Phase Currents"] = True
+            if self.ui.targetSpeedCheck.isChecked():
+                fields["Target Speed"] = True
+            if self.ui.actualSpeedCheck.isChecked():
+                fields["Actual Speed"] = True
+            if self.ui.boardTemperatureCheck.isChecked():
+                fields["Board Temperature"] = True
+            if self.ui.faultMaskCheck.isChecked():
+                fields["Fault Mask"] = True
+            if self.ui.warningMaskCheck.isChecked():
+                fields["Warning Mask"] = True
+            self.controller._start_logging(fields, int(self.ui.sampleRate.text()))
+                
+        elif self.ui.recordButton.text() == "END RECORDING":
+            self.ui.recordButton.setText("START RECORDING")
+            self.controller._end_logging()
 
     def _log_connection_status(self, connected : bool):
         if connected:
