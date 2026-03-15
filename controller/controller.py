@@ -1,5 +1,6 @@
 from PySide6.QtCore import QObject, Signal, QTimer
-import time
+import datetime
+import csv
 
 class Controller(QObject):
     graph_update = Signal(float, float, float, float)
@@ -10,6 +11,8 @@ class Controller(QObject):
         super().__init__()
         self.usb = usb
 
+        self.curr_log_file = None
+        self.logging_data_fields = {}
         self.latest_data = {}
         self.logging_timer = QTimer()
         self.logging_timer.timeout.connect(self._log)
@@ -35,19 +38,35 @@ class Controller(QObject):
     def _start_logging(self, fields, sample_rate):
         
         # Create CSV file
+        self.curr_log_file = open("log.csv", "w", newline="")
+        self.csv_writer = csv.writer(self.curr_log_file)
+
+        # Write header
+        header = ["Timestamp"]
+        for field, enabled in fields.items():
+            if enabled:
+                header.append(field)
+        self.csv_writer.writerow(header)
 
         # Start logging timer
+        self.logging_data_fields = fields
         interval_ms = int(1000 / sample_rate)
         self.logging_timer.start(interval_ms)
 
     def _log(self):
+        if not self.latest_data:
+            return
 
-        # log self.latest_data
-        print("logignf")
+        timestamp = datetime.datetime.now().strftime("%H:%M:%S.%f")
+        line = [timestamp]
+        for field, enabled in self.logging_data_fields.items():
+            if enabled:
+                line.append(self.latest_data[field])
+        self.csv_writer.writerow(line)
 
     def _end_logging(self):
 
-        # Stop logging timer
+        self.curr_log_file.close()
         self.logging_timer.stop()
 
     # Build this out

@@ -10,7 +10,6 @@ def main():
     usb = USBBackend()
     controller = Controller(usb)
 
-
     win = MainWindow(controller)
     win.show()
     
