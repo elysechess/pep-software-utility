@@ -45,6 +45,7 @@ class USBBackend(QObject):
             try:
                 line = self.ser.readline().decode().strip()
                 if line:
+                    print(line)
                     self.message_received.emit(line)
             except UnicodeDecodeError:
                 pass

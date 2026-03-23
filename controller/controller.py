@@ -6,6 +6,7 @@ class Controller(QObject):
     graph_update = Signal(float, float, float, float)
     dashboard_update = Signal(float, float, float, float, float)
     connection_status_update = Signal(bool)
+    send_command_status = Signal(bool)
 
     def __init__(self, usb):
         super().__init__()
@@ -16,7 +17,6 @@ class Controller(QObject):
         self.latest_data = {}
         self.logging_timer = QTimer()
         self.logging_timer.timeout.connect(self._log)
-
         self._connect_signals()
 
     def _connect_signals(self):
@@ -33,7 +33,26 @@ class Controller(QObject):
         self.connection_status_update.emit(connected)
 
     def send_message(self, cmd):
+        
+        # Parse entered command
+        parsed_cmd = ""
+        comm = cmd.split(",")
+        if comm[0].upper() == "ESTOP":
+            parsed_cmd = "00003000" # xxx 00 000 00000 00000 11000 000000000 --> xxx0 0000 0000 0000 0011 0000 0000 0000
+        elif comm[0].upper() == "SETSPEED":
+            if len(comm) < 2:
+                self.send_command_status.emit(False)
+                return
+            parsed_cmd = "08183000" # xxx 01 000 00011 00000 11000 000000000 --> xxx0 1000 0001 1000 0011 0000 0000 0000
+        elif comm[0].upper() == "RELEASE":
+            parsed_cmd = "00003001" # xxx 00 000 00000 00000 11000 000000001 --> xxx0 0000 0000 0000 0011 0000 0000 0001
+        else:
+            self.send_command_status.emit(False)
+            return
+
+        # Send over USB
         self.usb.send(cmd)
+        self.send_command_status.emit(True)
 
     def _start_logging(self, fields, sample_rate):
         

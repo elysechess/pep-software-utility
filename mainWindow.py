@@ -92,6 +92,7 @@ class MainWindow(QMainWindow):
         self.controller.graph_update.connect(self._update_graphs)
         self.controller.dashboard_update.connect(self._update_dashboard)
         self.controller.connection_status_update.connect(self._log_connection_status)
+        self.controller.send_command_status.connect(self._log_send_command_status)
 
     def _record_session(self):
         if not self.ui.sampleRate.text():
@@ -142,6 +143,10 @@ class MainWindow(QMainWindow):
         else:
             self._update_terminal("No connection established")
 
+    def _log_send_command_status(self, success: bool):
+        if not success:
+            self._update_terminal("ERROR: Incorrect command syntax, failed to send")
+
     def _refresh_ports(self):
 
         self.ui.COMselect.clear()
@@ -165,9 +170,6 @@ class MainWindow(QMainWindow):
             return
         self._update_terminal(cmd)
         self.ui.terminalLineEdit.clear()
-        # print(cmd)
-
-        # this is where you'd emit to USB worker
         self.controller.send_message(cmd)
 
     def _connect_to_board(self):
