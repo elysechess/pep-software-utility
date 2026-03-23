@@ -38,14 +38,14 @@ class USBBackend(QObject):
 
     def send(self, message: str):
         if self.ser:
-            self.ser.write((message + "\n").encode())
+            self.ser.write(bytes.fromhex(message) + b'\n')
 
     def _read_serial(self):
         if self.ser and self.ser.in_waiting:
             try:
-                line = self.ser.readline().decode().strip()
-                if line:
-                    print(line)
-                    self.message_received.emit(line)
+                data = self.ser.read(self.ser.in_waiting)
+                if data:
+                    print(data.hex())
+                    self.message_received.emit(data)
             except UnicodeDecodeError:
                 pass

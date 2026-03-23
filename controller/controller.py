@@ -51,7 +51,7 @@ class Controller(QObject):
             return
 
         # Send over USB
-        self.usb.send(cmd)
+        self.usb.send(parsed_cmd)
         self.send_command_status.emit(True)
 
     def _start_logging(self, fields, sample_rate):
