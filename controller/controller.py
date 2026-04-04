@@ -14,6 +14,12 @@ class Controller(QObject):
         super().__init__()
         self.usb = usb
 
+        self.FORMAT = "<I10f2I"   # little-endian
+        self.PACKET_SIZE = struct.calcsize(self.FORMAT)
+        self.target_speed = 0
+        self.motor_voltage_vals = np.zeros(5000)
+        self.motor_current_vals = np.zeros(5000)
+
         self.curr_log_file = None
         self.logging_data_fields = {}
         self.latest_data = {}
@@ -48,6 +54,7 @@ class Controller(QObject):
                 return
             parsed_cmd = 0x08183000 # xxx 01 000 00011 00000 11000 000000000 --> xxx0 1000 0001 1000 0011 0000 0000 0000 + 2 bytes extra data
             speed = int(comm[1])
+            target_speed = int(comm[1])
         elif comm[0].upper() == "RELEASE":
             parsed_cmd = 0x00003001 # xxx 00 000 00000 00000 11000 000000001 --> xxx0 0000 0000 0000 0011 0000 0000 0001 + no extra data
         else:
@@ -93,26 +100,52 @@ class Controller(QObject):
         self.curr_log_file.close()
         self.logging_timer.stop()
 
-    # Build this out
-    def _parse_packet(self, message : str):
+    # All data is 32 bit floating point
+    # Timestamp: 32 bit unsigned int
+    # Order: timestamp, bus voltage (V), bus current (A), P1 voltage, P1 current, P2 voltage, P2 current, P3 voltage, P3 current, speed (rpm), temperature (degrees Celsius), fault mask, warning mask  
+    # SET UP QUEUE - PERIODIC UPDATE
+    def _parse_packet(self, message):
 
-        # print(message) 
-    
-        bv, bc, pva, pvb, pvc, pca, pcb, pcc, ts, a_s, temp = map(float, message.split(","))
-        mv = (pva * pvb * pvc) / 3 # motor voltage - must calculate
-        mc = (pca * pcb * pcc) / 3 # motor current - must calculate
+        print(message) 
 
-        self.latest_data = {
-            "Bus Voltage": bv,
-            "Bus Current": bc,
-            "Phase Voltages": [pva, pvb, pvc],
-            "Phase Currents": [pca, pcb, pcc],
-            "Target Speed": ts,
-            "Actual Speed": a_s,
-            "Board Temperature": temp,
-            "Fault Mask": None,
-            "Warning Mask": None
-        }
+        # if len(message) < PACKET_SIZE:
+        #     print("Incomplete packet")
+        #     return None
 
-        self.graph_update.emit(ts, a_s, bc, mv)
-        self.dashboard_update.emit(bv, bc, mv, mc, temp)
+        try:
+
+            # Unpack hex message
+            unpacked = struct.unpack(self.FORMAT, message[:self.PACKET_SIZE])
+            parsed = {
+                "timestamp": unpacked[0],
+                "bus_voltage": unpacked[1],
+                "bus_current": unpacked[2],
+                "p1_voltage": unpacked[3],
+                "p1_current": unpacked[4],
+                "p2_voltage": unpacked[5],
+                "p2_current": unpacked[6],
+                "p3_voltage": unpacked[7],
+                "p3_current": unpacked[8],
+                "speed_rpm": unpacked[9],
+                "temperature_c": unpacked[10],
+                "fault_mask": unpacked[11],
+                "warning_mask": unpacked[12],
+            }
+
+            print(parsed)
+
+        except struct.error as e:
+            print("Parse error:", e)
+            return None
+
+        # Calculate motor voltage
+        self.motor_voltage_vals = parsed["p1_voltage"] + self.motor_voltage_vals[1:] 
+        motor_voltage = np.sqrt(np.mean(self.motor_voltage_vals**2) - np.mean(self.motor_voltage_vals)**2)
+
+        # Calculate motor current
+        self.motor_current_vals = parsed["p1_current"] + self.motor_current_vals[1:] 
+        motor_current = np.sqrt(np.mean(self.motor_current_vals**2))
+
+        self.latest_data = parsed # For logging
+        self.graph_update.emit(self.target_speed, parsed["speed_rpm"], parsed["bus_current"], motor_voltage)
+        self.dashboard_update.emit(parsed["bus_voltage"], parsed["bus_current"], motor_voltage, motor_current, parsed["temperature_c"])

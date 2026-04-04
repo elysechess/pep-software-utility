@@ -1,10 +1,11 @@
 from PySide6.QtCore import QObject, Signal, QTimer
 import serial
 import time
+import queue
 
 
 class USBBackend(QObject):
-    message_received = Signal(str)
+    message_received = Signal(bytes)
     connection_changed = Signal(bool)
 
     def __init__(self):
