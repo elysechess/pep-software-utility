@@ -47,7 +47,11 @@ class USBBackend(QObject):
             try:
                 data = self.ser.read(self.ser.in_waiting)
                 if data:
-                    print("response", data.hex())
-                    self.message_received.emit(data)
+                    demo_verification = "Message received by State Manager!"
+                    if data.hex() == demo_verification.encode('utf-8').hex():
+                        print(demo_verification.encode('utf-8'))
+                    else:
+                        print("response", data.hex())
+                        self.message_received.emit(data)
             except UnicodeDecodeError:
                 pass

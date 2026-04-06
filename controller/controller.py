@@ -17,6 +17,7 @@ class Controller(QObject):
         self.FORMAT = "<I10f2I"   # little-endian
         self.PACKET_SIZE = struct.calcsize(self.FORMAT)
         self.target_speed = 0
+        self.idx = 0
         self.motor_voltage_vals = np.zeros(5000)
         self.motor_current_vals = np.zeros(5000)
 
@@ -54,7 +55,7 @@ class Controller(QObject):
                 return
             parsed_cmd = 0x08183000 # xxx 01 000 00011 00000 11000 000000000 --> xxx0 1000 0001 1000 0011 0000 0000 0000 + 2 bytes extra data
             speed = int(comm[1])
-            target_speed = int(comm[1])
+            self.target_speed = int(comm[1])
         elif comm[0].upper() == "RELEASE":
             parsed_cmd = 0x00003001 # xxx 00 000 00000 00000 11000 000000001 --> xxx0 0000 0000 0000 0011 0000 0000 0001 + no extra data
         else:
@@ -139,11 +140,12 @@ class Controller(QObject):
             return None
 
         # Calculate motor voltage
-        self.motor_voltage_vals = parsed["p1_voltage"] + self.motor_voltage_vals[1:] 
+        self.idx = (self.idx + 1) % 5000
+        self.motor_voltage_vals[self.idx] = parsed["p1_voltage"]
         motor_voltage = np.sqrt(np.mean(self.motor_voltage_vals**2) - np.mean(self.motor_voltage_vals)**2)
 
         # Calculate motor current
-        self.motor_current_vals = parsed["p1_current"] + self.motor_current_vals[1:] 
+        self.motor_current_vals[self.idx] = parsed["p1_current"]
         motor_current = np.sqrt(np.mean(self.motor_current_vals**2))
 
         self.latest_data = parsed # For logging
