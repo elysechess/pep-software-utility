@@ -48,22 +48,22 @@ class Controller(QObject):
         speed = 0
         comm = cmd.split(",")
         if comm[0].upper() == "ESTOP":
-            parsed_cmd = 0x00003000 # xxx 00 000 00000 00000 11000 000000000 --> xxx0 0000 0000 0000 0011 0000 0000 0000 + no extra data
+            parsed_cmd = 0x00003000 # xxx 00 000 00000 00000 11000 000000000 --> xxx0 0000 0000 0000 0011 0000 0000 0000 
         elif comm[0].upper() == "SETSPEED":
             if len(comm) < 2:
                 self.send_command_status.emit(False)
                 return
-            parsed_cmd = 0x08183000 # xxx 01 000 00011 00000 11000 000000000 --> xxx0 1000 0001 1000 0011 0000 0000 0000 + 2 bytes extra data
+            parsed_cmd = 0x08183000 # xxx 01 000 00011 00000 11000 000000000 --> xxx0 1000 0001 1000 0011 0000 0000 0000 
             speed = int(comm[1])
             self.target_speed = int(comm[1])
         elif comm[0].upper() == "RELEASE":
-            parsed_cmd = 0x00003001 # xxx 00 000 00000 00000 11000 000000001 --> xxx0 0000 0000 0000 0011 0000 0000 0001 + no extra data
+            parsed_cmd = 0x00003001 # xxx 00 000 00000 00000 11000 000000001 --> xxx0 0000 0000 0000 0011 0000 0000 0001 
         else:
             self.send_command_status.emit(False)
             return
 
         # Send over USB
-        message = struct.pack(">I", parsed_cmd) + struct.pack(">h", speed)
+        message = struct.pack(">I", parsed_cmd) + struct.pack(">h", speed) # 2 bytes speed data - used for SETSPEED
         self.usb.send(message)
         self.send_command_status.emit(True)
 
