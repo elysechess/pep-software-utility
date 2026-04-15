@@ -1,29 +1,29 @@
-from PySide6.QtCore import QObject, Signal, QTimer
+from PySide6.QtCore import QObject, Signal
 import serial
 import time
 import queue
+import threading
 
 
 class USBBackend(QObject):
-    message_received = Signal(bytes)
     connection_changed = Signal(bool)
 
     def __init__(self):
         super().__init__()
         self.ser = None
-        self.timer = QTimer()
-        self.timer.timeout.connect(self._read_serial)
+        self.packet_queue = queue.Queue(maxsize = 10000)
+        self.buffer = bytearray()
+        self.running = False
+        self.PACKET_SIZE = 64
 
     def connect(self, port: str, baudrate: int = 115200):
         try:
-            # print(port)
             self.ser = serial.Serial(port, baudrate, timeout=0)
-
             if not self.ser.is_open:
                 raise serial.SerialException("Port failed to open")
-
-            time.sleep(2)
-            self.timer.start(10)
+            time.sleep(0.1)
+            self.running = True
+            threading.Thread(target = self._read_loop, daemon = True).start()
             self.connection_changed.emit(True)
 
         except serial.SerialException:
@@ -31,8 +31,8 @@ class USBBackend(QObject):
             self.connection_changed.emit(False)
 
     def disconnect(self):
+        self.running = False
         if self.ser:
-            self.timer.stop()
             self.ser.close()
             self.ser = None
         self.connection_changed.emit(False)
@@ -42,16 +42,20 @@ class USBBackend(QObject):
         if self.ser:
             self.ser.write(message)
 
-    def _read_serial(self):
-        if self.ser and self.ser.in_waiting:
-            try:
-                data = self.ser.read(self.ser.in_waiting)
-                if data:
-                    demo_verification = "Message received by State Manager!"
-                    if data.hex() == demo_verification.encode('utf-8').hex():
-                        print(demo_verification.encode('utf-8'))
-                    else:
-                        print("response", data.hex())
-                        self.message_received.emit(data)
-            except UnicodeDecodeError:
-                pass
+    def _read_loop(self):
+        while self.running:
+            if self.ser.in_waiting:
+                chunk = self.ser.read(self.ser.in_waiting)
+                self.buffer.extend(chunk)
+                while len(self.buffer) >= self.PACKET_SIZE:
+                    packet = self.buffer[:self.PACKET_SIZE]
+                    del self.buffer[:self.PACKET_SIZE]
+
+                    try:
+                        self.packet_queue.put_nowait(packet)
+                    except queue.Full:
+                        try:
+                            self.packet_queue.get_nowait()
+                            self.packet_queue.put_nowait(packet) # Drop oldest
+                        except:
+                            pass

@@ -227,7 +227,7 @@ class MainWindow(QMainWindow):
         mp = mv * mc
         self.ui.motorPower.setText(f"{mp:.2f}")
 
-        efficiency = bp / mp if mp != 0 else 0
+        efficiency = 100 * mp / bp if mp != 0 else 0
         self.ui.efficiency.setText(f"{efficiency:.2f}")
 
         self.ui.temperature.setText(f"{temp:.2f}")

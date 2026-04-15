@@ -20,16 +20,20 @@ class Controller(QObject):
         self.idx = 0
         self.motor_voltage_vals = np.zeros(5000)
         self.motor_current_vals = np.zeros(5000)
+        self.bus_current_vals = np.zeros(5000)
+
+        self.processing_timer = QTimer()
+        self.processing_timer.timeout.connect(self._process_packets)
+        self.processing_timer.start(50) # Process USB buffer every 10 ms
 
         self.curr_log_file = None
         self.logging_data_fields = {}
         self.latest_data = {}
-        self.logging_timer = QTimer()
-        self.logging_timer.timeout.connect(self._log)
+        self.log_buffer = []
+
         self._connect_signals()
 
     def _connect_signals(self):
-        self.usb.message_received.connect(self._parse_packet)
         self.usb.connection_changed.connect(self._update_connection_status)
     
     def _connect_usb(self, port):
@@ -67,7 +71,23 @@ class Controller(QObject):
         self.usb.send(message)
         self.send_command_status.emit(True)
 
-    def _start_logging(self, fields, sample_rate):
+    def _process_packets(self):
+        packets = []
+        while not self.usb.packet_queue.empty():
+            packets.append(self.usb.packet_queue.get()) # Drain queue
+        if packets:
+            # print(packets)
+            pass
+
+        if not packets:
+            return
+    
+        for packet in packets:
+            self._parse_packet(packet)
+        self._flush_log_buffer()
+        self._emit_ui_update()
+
+    def _start_logging(self, fields):
         
         # Create CSV file
         self.curr_log_file = open("log.csv", "w", newline="")
@@ -82,32 +102,46 @@ class Controller(QObject):
 
         # Start logging timer
         self.logging_data_fields = fields
-        interval_ms = int(1000 / sample_rate)
-        self.logging_timer.start(interval_ms)
 
-    def _log(self):
+    def _end_logging(self):
+        self.curr_log_file.close()
+
+    def _emit_ui_update(self):
         if not self.latest_data:
             return
 
-        timestamp = datetime.datetime.now().strftime("%H:%M:%S.%f")
-        line = [timestamp]
-        for field, enabled in self.logging_data_fields.items():
-            if enabled:
-                line.append(self.latest_data[field])
-        self.csv_writer.writerow(line)
+        motor_voltage = np.sqrt(3) * np.sqrt(np.mean(self.motor_voltage_vals**2) - np.mean(self.motor_voltage_vals)**2)
+        motor_current = np.sqrt(np.mean(self.motor_current_vals**2))
+        avg_bus_current = np.mean(self.bus_current_vals)
 
-    def _end_logging(self):
+        self.graph_update.emit(
+            self.target_speed,
+            self.latest_data["speed_rpm"],
+            avg_bus_current,
+            motor_voltage
+        )
 
-        self.curr_log_file.close()
-        self.logging_timer.stop()
+        self.dashboard_update.emit(
+            self.latest_data["bus_voltage"],
+            avg_bus_current,
+            motor_voltage,
+            motor_current,
+            self.latest_data["temperature_c"]
+        )
+
+    def _flush_log_buffer(self):
+        if len(self.log_buffer) >= 500:  # ~100 ms of data
+            self.csv_writer.writerows(self.log_buffer)
+            self.log_buffer.clear()
 
     # All data is 32 bit floating point
     # Timestamp: 32 bit unsigned int
     # Order: timestamp, bus voltage (V), bus current (A), P1 voltage, P1 current, P2 voltage, P2 current, P3 voltage, P3 current, speed (rpm), temperature (degrees Celsius), fault mask, warning mask  
-    # SET UP QUEUE - PERIODIC UPDATE
     def _parse_packet(self, message):
 
-        print(message) 
+        # print(message) 
+        if len(message) != 64:
+            return
 
         # if len(message) < PACKET_SIZE:
         #     print("Incomplete packet")
@@ -133,21 +167,18 @@ class Controller(QObject):
                 "warning_mask": unpacked[12],
             }
 
-            print(parsed)
+            # print(parsed)
 
         except struct.error as e:
             print("Parse error:", e)
             return None
+        
+        self.latest_data = parsed # For logging
+        if self.logging_data_fields:
+            row = [parsed[field] for field, enabled in self.logging_data_fields.items() if enabled]
+            self.log_buffer.append(row)
 
-        # Calculate motor voltage
         self.idx = (self.idx + 1) % 5000
         self.motor_voltage_vals[self.idx] = parsed["p1_voltage"]
-        motor_voltage = np.sqrt(np.mean(self.motor_voltage_vals**2) - np.mean(self.motor_voltage_vals)**2)
-
-        # Calculate motor current
         self.motor_current_vals[self.idx] = parsed["p1_current"]
-        motor_current = np.sqrt(np.mean(self.motor_current_vals**2))
-
-        self.latest_data = parsed # For logging
-        self.graph_update.emit(self.target_speed, parsed["speed_rpm"], parsed["bus_current"], motor_voltage)
-        self.dashboard_update.emit(parsed["bus_voltage"], parsed["bus_current"], motor_voltage, motor_current, parsed["temperature_c"])
+        self.bus_current_vals[self.idx] = parsed["bus_current"]
