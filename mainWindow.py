@@ -95,8 +95,6 @@ class MainWindow(QMainWindow):
         self.controller.send_command_status.connect(self._log_send_command_status)
 
     def _record_session(self):
-        if not self.ui.sampleRate.text():
-            return
         
         if self.ui.recordButton.text() == "START RECORDING":
             self.ui.recordButton.setText("END RECORDING")
@@ -131,7 +129,7 @@ class MainWindow(QMainWindow):
                 fields["Fault Mask"] = True
             if self.ui.warningMaskCheck.isChecked():
                 fields["Warning Mask"] = True
-            self.controller._start_logging(fields, int(self.ui.sampleRate.text()))
+            self.controller._start_logging(fields)
                 
         elif self.ui.recordButton.text() == "END RECORDING":
             self.ui.recordButton.setText("START RECORDING")

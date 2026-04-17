@@ -97,10 +97,13 @@ class Controller(QObject):
         header = ["Timestamp"]
         for field, enabled in fields.items():
             if enabled:
-                header.append(field)
+                if field == "Phase Voltages":
+                    header += ["Phase Voltage A", "Phase Voltage B", "Phase Voltage C"]
+                elif field == "Phase Currents":
+                    header += ["Phase Current A", "Phase Current B", "Phase Current C"]
+                else:
+                    header.append(field)
         self.csv_writer.writerow(header)
-
-        # Start logging timer
         self.logging_data_fields = fields
 
     def _end_logging(self):
@@ -175,7 +178,15 @@ class Controller(QObject):
         
         self.latest_data = parsed # For logging
         if self.logging_data_fields:
-            row = [parsed[field] for field, enabled in self.logging_data_fields.items() if enabled]
+            row = []
+            for field, enabled in self.logging_data_fields.items():
+                if enabled:
+                    if field == "Phase Voltages":
+                        row += [parsed["p1_voltage"], parsed["p2_voltage"], parsed["p3_voltage"]]
+                    elif field == "Phase Currents":
+                        row += [parsed["p1_current"], parsed["p2_current"], parsed["p3_current"]]
+                    else:
+                        row.append(parsed[field])
             self.log_buffer.append(row)
 
         self.idx = (self.idx + 1) % 5000
