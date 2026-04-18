@@ -44,19 +44,22 @@ class USBBackend(QObject):
 
     def _read_loop(self):
         while self.running:
-            if self.ser.in_waiting:
-                chunk = self.ser.read(self.ser.in_waiting)
-                self.buffer.extend(chunk)
-                while len(self.buffer) >= self.PACKET_SIZE:
-                    packet = self.buffer[:self.PACKET_SIZE]
-                    del self.buffer[:self.PACKET_SIZE]
+            try:
+                if self.ser.in_waiting:
+                    chunk = self.ser.read(self.ser.in_waiting)
+                    self.buffer.extend(chunk)
+                    while len(self.buffer) >= self.PACKET_SIZE:
+                        packet = self.buffer[:self.PACKET_SIZE]
+                        del self.buffer[:self.PACKET_SIZE]
 
-                    try:
-                        self.packet_queue.put_nowait(packet)
-                    except queue.Full:
                         try:
-                            self.packet_queue.get_nowait()
-                            self.packet_queue.put_nowait(packet) # Drop oldest
-                            print("packet dropped")
-                        except:
-                            pass
+                            self.packet_queue.put_nowait(packet)
+                        except queue.Full:
+                            try:
+                                self.packet_queue.get_nowait()
+                                self.packet_queue.put_nowait(packet) # Drop oldest
+                                print("packet dropped")
+                            except:
+                                pass
+            except:
+                self.connection_changed.emit(False)

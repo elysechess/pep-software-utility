@@ -8,7 +8,7 @@ import struct
 class Controller(QObject):
     graph_update = Signal(float, float, float, float)
     dashboard_update = Signal(float, float, float, float, float)
-    fw_update = Signal(int, int)
+    fw_update = Signal(object, object)
     connection_status_update = Signal(bool)
     send_command_status = Signal(bool)
 
@@ -27,13 +27,15 @@ class Controller(QObject):
 
         self.processing_timer = QTimer()
         self.processing_timer.timeout.connect(self._process_packets)
-        self.processing_timer.start(50) # Process USB buffer every 10 ms
+        self.processing_timer.start(50) # Process USB buffer every 50 ms
 
         self.curr_log_file = None
         self.logging_data_fields = []
         self.latest_data = {}
         self.log_buffer = []
         self.logging = False
+        self.first_log = True
+        self.first_log_timestamp_val = 0
 
         self._connect_signals()
 
@@ -125,6 +127,8 @@ class Controller(QObject):
 
     def _end_logging(self):
         self.logging = False
+        self.first_log = True
+        self.first_log_timestamp_val = 0
         self.curr_log_file.close()
 
     def _emit_ui_update(self):
@@ -203,7 +207,13 @@ class Controller(QObject):
         if self.logging_data_fields:
             row = []
             for field in self.logging_data_fields:
-                row.append(parsed[field])
+                if field == "Timestamp":
+                    if self.first_log:
+                        self.first_log = False
+                        self.first_log_timestamp_val = parsed[field]
+                    row.append(parsed[field] - self.first_log_timestamp_val)
+                else:
+                    row.append(parsed[field])
             self.log_buffer.append(row)
 
         self.idx = (self.idx + 1) % 5000

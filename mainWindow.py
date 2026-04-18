@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QMainWindow, QWidget
+from PySide6.QtWidgets import QMainWindow
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile, QTimer
 import pyqtgraph as pg
@@ -21,6 +21,9 @@ class MainWindow(QMainWindow):
         pg.setConfigOption('foreground', 'k')
 
         self.controller = controller
+        # self.port_refresh = QTimer()
+        # self.port_refresh.timeout.connect(self._refresh_ports)
+        # self.port_refresh.start(1000)
 
         self._load_ui()
         self._setup_plots()
@@ -50,7 +53,7 @@ class MainWindow(QMainWindow):
         }
 
     def _load_ui(self):
-        file = QFile("ui/utility.ui")
+        file = QFile("utility.ui")
         file.open(QFile.ReadOnly)
 
         loader = UiLoader()         
