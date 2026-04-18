@@ -469,7 +469,7 @@ QCheckBox::indicator:checked {
             </layout>
            </item>
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="4,4,2">
+            <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0">
              <item>
               <widget class="QLabel" name="label_7">
                <property name="text">
@@ -478,12 +478,12 @@ QCheckBox::indicator:checked {
               </widget>
              </item>
              <item>
-              <widget class="QLineEdit" name="sampleRate"/>
-             </item>
-             <item>
               <widget class="QLabel" name="label_10">
                <property name="text">
-                <string>Hz</string>
+                <string>5 kHz</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
                </property>
               </widget>
              </item>
@@ -537,22 +537,51 @@ QCheckBox::indicator:checked {
            </item>
            <item>
             <layout class="QGridLayout" name="gridLayout_3">
-             <item row="0" column="2" alignment="Qt::AlignmentFlag::AlignHCenter">
-              <widget class="QLabel" name="FW3">
+             <item row="0" column="0">
+              <widget class="QLabel" name="FW0">
+               <property name="styleSheet">
+                <string notr="true">color: rgb(255, 0, 0);</string>
+               </property>
                <property name="text">
                 <string/>
                </property>
               </widget>
              </item>
-             <item row="0" column="1" alignment="Qt::AlignmentFlag::AlignHCenter">
-              <widget class="QLabel" name="FW2">
+             <item row="1" column="3" alignment="Qt::AlignmentFlag::AlignHCenter">
+              <widget class="QLabel" name="FW7">
+               <property name="styleSheet">
+                <string notr="true">color: rgb(255, 0, 0);</string>
+               </property>
                <property name="text">
                 <string/>
                </property>
               </widget>
              </item>
-             <item row="0" column="0" alignment="Qt::AlignmentFlag::AlignHCenter">
-              <widget class="QLabel" name="FW1">
+             <item row="2" column="1" alignment="Qt::AlignmentFlag::AlignHCenter">
+              <widget class="QLabel" name="FW9">
+               <property name="styleSheet">
+                <string notr="true">color: rgb(255, 0, 0);</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="1">
+              <widget class="QLabel" name="FW13">
+               <property name="styleSheet">
+                <string notr="true">color: rgb(255, 170, 0);</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="FW4">
+               <property name="styleSheet">
+                <string notr="true">color: rgb(255, 0, 0);</string>
+               </property>
                <property name="text">
                 <string/>
                </property>
@@ -560,13 +589,69 @@ QCheckBox::indicator:checked {
              </item>
              <item row="1" column="1" alignment="Qt::AlignmentFlag::AlignHCenter">
               <widget class="QLabel" name="FW5">
+               <property name="styleSheet">
+                <string notr="true">color: rgb(255, 0, 0);</string>
+               </property>
                <property name="text">
-                <string>NONE</string>
+                <string/>
                </property>
               </widget>
              </item>
-             <item row="1" column="0" alignment="Qt::AlignmentFlag::AlignHCenter">
-              <widget class="QLabel" name="FW4">
+             <item row="2" column="2" alignment="Qt::AlignmentFlag::AlignHCenter">
+              <widget class="QLabel" name="FW10">
+               <property name="styleSheet">
+                <string notr="true">color: rgb(255, 0, 0);</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="2" alignment="Qt::AlignmentFlag::AlignHCenter">
+              <widget class="QLabel" name="FW2">
+               <property name="styleSheet">
+                <string notr="true">color: rgb(255, 0, 0);</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="2">
+              <widget class="QLabel" name="FW14">
+               <property name="styleSheet">
+                <string notr="true">color: rgb(255, 170, 0);</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1" alignment="Qt::AlignmentFlag::AlignHCenter">
+              <widget class="QLabel" name="FW1">
+               <property name="styleSheet">
+                <string notr="true">color: rgb(255, 0, 0);</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QLabel" name="FW12">
+               <property name="styleSheet">
+                <string notr="true">color: rgb(255, 0, 0);</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="3" alignment="Qt::AlignmentFlag::AlignHCenter">
+              <widget class="QLabel" name="FW11">
+               <property name="styleSheet">
+                <string notr="true">color: rgb(255, 0, 0);</string>
+               </property>
                <property name="text">
                 <string/>
                </property>
@@ -574,27 +659,39 @@ QCheckBox::indicator:checked {
              </item>
              <item row="1" column="2" alignment="Qt::AlignmentFlag::AlignHCenter">
               <widget class="QLabel" name="FW6">
+               <property name="styleSheet">
+                <string notr="true">color: rgb(255, 0, 0);</string>
+               </property>
                <property name="text">
                 <string/>
                </property>
               </widget>
              </item>
-             <item row="2" column="0" alignment="Qt::AlignmentFlag::AlignHCenter">
-              <widget class="QLabel" name="FW7">
+             <item row="0" column="3" alignment="Qt::AlignmentFlag::AlignHCenter">
+              <widget class="QLabel" name="FW3">
+               <property name="styleSheet">
+                <string notr="true">color: rgb(255, 0, 0);</string>
+               </property>
                <property name="text">
                 <string/>
                </property>
               </widget>
              </item>
-             <item row="2" column="1" alignment="Qt::AlignmentFlag::AlignHCenter">
+             <item row="3" column="3">
+              <widget class="QLabel" name="FW15">
+               <property name="styleSheet">
+                <string notr="true">color: rgb(255, 170, 0);</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="0">
               <widget class="QLabel" name="FW8">
-               <property name="text">
-                <string/>
+               <property name="styleSheet">
+                <string notr="true">color: rgb(255, 0, 0);</string>
                </property>
-              </widget>
-             </item>
-             <item row="2" column="2" alignment="Qt::AlignmentFlag::AlignHCenter">
-              <widget class="QLabel" name="FW9">
                <property name="text">
                 <string/>
                </property>

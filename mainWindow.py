@@ -2,8 +2,7 @@ from PySide6.QtWidgets import QMainWindow, QWidget
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile, QTimer
 import pyqtgraph as pg
-import random
-import time
+import numpy as np
 import serial.tools.list_ports
 
 class UiLoader(QUiLoader):
@@ -27,7 +26,28 @@ class MainWindow(QMainWindow):
         self._setup_plots()
         self._connect_signals()
         self._refresh_ports()
-        # self._start_fake_data()        
+
+        self.warning_map = {
+        0: (self.ui.FW13, "BV HIGH"),
+        1: (self.ui.FW14, "BV LOW"),
+        2: (self.ui.FW15, "TEMP HIGH"),
+        }
+
+        self.fault_map = {
+            0: (self.ui.FW0, "BUS UV"),
+            1: (self.ui.FW1, "BUS OV"),
+            2: (self.ui.FW2, "PHA OC"),
+            3: (self.ui.FW3, "PHB OC"),
+            4: (self.ui.FW4, "PHC OC"),
+            5: (self.ui.FW5, "DRV OT"),
+            6: (self.ui.FW6, "BRD OT"),
+            7: (self.ui.FW7, "DRV FLT"),
+            8: (self.ui.FW8, "MC TIMEOUT"),
+            9: (self.ui.FW9, "OBS FAIL"),
+            10: (self.ui.FW10, "SW ERR"),
+            11: (self.ui.FW11, "START FAIL"),
+            12: (self.ui.FW12, "MC OC"),
+        }
 
     def _load_ui(self):
         file = QFile("ui/utility.ui")
@@ -91,6 +111,7 @@ class MainWindow(QMainWindow):
         self.ui.connectButton.clicked.connect(self._connect_to_board)
         self.controller.graph_update.connect(self._update_graphs)
         self.controller.dashboard_update.connect(self._update_dashboard)
+        self.controller.fw_update.connect(self._update_fw)
         self.controller.connection_status_update.connect(self._log_connection_status)
         self.controller.send_command_status.connect(self._log_send_command_status)
 
@@ -188,7 +209,6 @@ class MainWindow(QMainWindow):
 
     def _update_graphs(self, p1, p2, p3, p4):
 
-
         # ----- Plot 1 (two curves) -----
         plot1 = self.plots["plot1"]
         plot1["data"][0].append(p1)
@@ -222,51 +242,26 @@ class MainWindow(QMainWindow):
         self.ui.motorVoltage.setText(f"{mv:.2f}")
         self.ui.motorCurrent.setText(f"{mc:.2f}")
 
-        mp = mv * mc
+        mp = np.sqrt(3) * mv * mc
         self.ui.motorPower.setText(f"{mp:.2f}")
 
         efficiency = 100 * mp / bp if mp != 0 else 0
         self.ui.efficiency.setText(f"{efficiency:.2f}")
 
         self.ui.temperature.setText(f"{temp:.2f}")
+    
+    def _update_fw(self, warning_mask, fault_mask):
+    
+        # Warnings
+        for bit, (widget, text) in self.warning_map.items():
+            if (warning_mask >> bit) & 1:
+                widget.setText(text)
+            else:
+                widget.setText("")
 
-
-    # def _start_recording(self):
-    #     self.ui.terminalOutput.appendPlainText("Recording started")
-
-    # def _stop_recording(self):
-    #     self.ui.terminalOutput.appendPlainText("Recording stopped")
-
-
-    # REMOVE once USB data input works
-    def _start_fake_data(self):
-        self.start_time = time.time()
-        self.timer = QTimer()
-        self.timer.timeout.connect(self._update_fake_data)
-        self.timer.start(50)  # 20 Hz
-
-    # REMOVE once USB data input works
-    def _update_fake_data(self):
-
-        # ----- Plot 1 (two curves) -----
-        plot1 = self.plots["plot1"]
-        plot1["data"][0].append(random.uniform(0, 3.3))
-        plot1["data"][1].append(random.uniform(0, 3.3))
-
-        plot1["data"][0] = plot1["data"][0][-200:]
-        plot1["data"][1] = plot1["data"][1][-200:]
-
-        plot1["curves"][0].setData(plot1["data"][0])
-        plot1["curves"][1].setData(plot1["data"][1])
-
-        # ----- Plot 2 -----
-        plot2 = self.plots["plot2"]
-        plot2["data"][0].append(random.uniform(0, 3.3))
-        plot2["data"][0] = plot2["data"][0][-200:]
-        plot2["curves"][0].setData(plot2["data"][0])
-
-        # ----- Plot 3 -----
-        plot3 = self.plots["plot3"]
-        plot3["data"][0].append(random.uniform(0, 3.3))
-        plot3["data"][0] = plot3["data"][0][-200:]
-        plot3["curves"][0].setData(plot3["data"][0])
+        # Faults
+        for bit, (widget, text) in self.fault_map.items():
+            if (fault_mask >> bit) & 1:
+                widget.setText(text)
+            else:
+                widget.setText("")

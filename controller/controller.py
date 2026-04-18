@@ -1,4 +1,5 @@
 from PySide6.QtCore import QObject, Signal, QTimer
+from PySide6.QtWidgets import QFileDialog
 import datetime
 import csv
 import numpy as np
@@ -7,6 +8,7 @@ import struct
 class Controller(QObject):
     graph_update = Signal(float, float, float, float)
     dashboard_update = Signal(float, float, float, float, float)
+    fw_update = Signal(int, int)
     connection_status_update = Signal(bool)
     send_command_status = Signal(bool)
 
@@ -18,7 +20,8 @@ class Controller(QObject):
         self.PACKET_SIZE = struct.calcsize(self.FORMAT)
         self.target_speed = 0
         self.idx = 0
-        self.motor_voltage_vals = np.zeros(5000)
+        self.motor_voltage_pA_vals = np.zeros(5000)
+        self.motor_voltage_pB_vals = np.zeros(5000)
         self.motor_current_vals = np.zeros(5000)
         self.bus_current_vals = np.zeros(5000)
 
@@ -27,9 +30,10 @@ class Controller(QObject):
         self.processing_timer.start(50) # Process USB buffer every 10 ms
 
         self.curr_log_file = None
-        self.logging_data_fields = {}
+        self.logging_data_fields = []
         self.latest_data = {}
         self.log_buffer = []
+        self.logging = False
 
         self._connect_signals()
 
@@ -89,8 +93,20 @@ class Controller(QObject):
 
     def _start_logging(self, fields):
         
+        # Open file dialog
+        file_path, _ = QFileDialog.getSaveFileName(
+            None,
+            "Save Log File",
+            datetime.datetime.now().strftime("log_%Y%m%d_%H%M%S.csv"),
+            "CSV Files (*.csv);;All Files (*)"
+        )
+
+        # If user cancels, do nothing
+        if not file_path:
+            return
+
         # Create CSV file
-        self.curr_log_file = open("log.csv", "w", newline="")
+        self.curr_log_file = open(file_path, "w", newline="")
         self.csv_writer = csv.writer(self.curr_log_file)
 
         # Write header
@@ -104,36 +120,43 @@ class Controller(QObject):
                 else:
                     header.append(field)
         self.csv_writer.writerow(header)
-        self.logging_data_fields = fields
+        self.logging_data_fields = header
+        self.logging = True
 
     def _end_logging(self):
+        self.logging = False
         self.curr_log_file.close()
 
     def _emit_ui_update(self):
         if not self.latest_data:
             return
 
-        motor_voltage = np.sqrt(3) * np.sqrt(np.mean(self.motor_voltage_vals**2) - np.mean(self.motor_voltage_vals)**2)
+        motor_voltage = np.sqrt(np.mean((self.motor_voltage_pA_vals - self.motor_voltage_pB_vals)**2)) 
         motor_current = np.sqrt(np.mean(self.motor_current_vals**2))
         avg_bus_current = np.mean(self.bus_current_vals)
 
         self.graph_update.emit(
             self.target_speed,
-            self.latest_data["speed_rpm"],
+            self.latest_data["Actual Speed"],
             avg_bus_current,
             motor_voltage
         )
 
         self.dashboard_update.emit(
-            self.latest_data["bus_voltage"],
+            self.latest_data["Bus Voltage"],
             avg_bus_current,
             motor_voltage,
             motor_current,
-            self.latest_data["temperature_c"]
+            self.latest_data["Board Temperature"]
+        )
+
+        self.fw_update.emit(
+            self.latest_data["Warning Mask"], 
+            self.latest_data["Fault Mask"]
         )
 
     def _flush_log_buffer(self):
-        if len(self.log_buffer) >= 500:  # ~100 ms of data
+        if self.logging and len(self.log_buffer) >= 500:  # ~100 ms of data
             self.csv_writer.writerows(self.log_buffer)
             self.log_buffer.clear()
 
@@ -155,19 +178,19 @@ class Controller(QObject):
             # Unpack hex message
             unpacked = struct.unpack(self.FORMAT, message[:self.PACKET_SIZE])
             parsed = {
-                "timestamp": unpacked[0],
-                "bus_voltage": unpacked[1],
-                "bus_current": unpacked[2],
-                "p1_voltage": unpacked[3],
-                "p1_current": unpacked[4],
-                "p2_voltage": unpacked[5],
-                "p2_current": unpacked[6],
-                "p3_voltage": unpacked[7],
-                "p3_current": unpacked[8],
-                "speed_rpm": unpacked[9],
-                "temperature_c": unpacked[10],
-                "fault_mask": unpacked[11],
-                "warning_mask": unpacked[12],
+                "Timestamp": unpacked[0],
+                "Bus Voltage": unpacked[1],
+                "Bus Current": unpacked[2],
+                "Phase Voltage A": unpacked[3],
+                "Phase Current A": unpacked[4],
+                "Phase Voltage B": unpacked[5],
+                "Phase Current B": unpacked[6],
+                "Phase Voltage C": unpacked[7],
+                "Phase Current C": unpacked[8],
+                "Actual Speed": unpacked[9],
+                "Board Temperature": unpacked[10],
+                "Fault Mask": unpacked[11],
+                "Warning Mask": unpacked[12],
             }
 
             # print(parsed)
@@ -179,17 +202,12 @@ class Controller(QObject):
         self.latest_data = parsed # For logging
         if self.logging_data_fields:
             row = []
-            for field, enabled in self.logging_data_fields.items():
-                if enabled:
-                    if field == "Phase Voltages":
-                        row += [parsed["p1_voltage"], parsed["p2_voltage"], parsed["p3_voltage"]]
-                    elif field == "Phase Currents":
-                        row += [parsed["p1_current"], parsed["p2_current"], parsed["p3_current"]]
-                    else:
-                        row.append(parsed[field])
+            for field in self.logging_data_fields:
+                row.append(parsed[field])
             self.log_buffer.append(row)
 
         self.idx = (self.idx + 1) % 5000
-        self.motor_voltage_vals[self.idx] = parsed["p1_voltage"]
-        self.motor_current_vals[self.idx] = parsed["p1_current"]
-        self.bus_current_vals[self.idx] = parsed["bus_current"]
+        self.motor_voltage_pA_vals[self.idx] = parsed["Phase Voltage A"]
+        self.motor_voltage_pB_vals[self.idx] = parsed["Phase Voltage B"]
+        self.motor_current_vals[self.idx] = parsed["Phase Current A"]
+        self.bus_current_vals[self.idx] = parsed["Bus Current"]

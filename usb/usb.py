@@ -57,5 +57,6 @@ class USBBackend(QObject):
                         try:
                             self.packet_queue.get_nowait()
                             self.packet_queue.put_nowait(packet) # Drop oldest
+                            print("packet dropped")
                         except:
                             pass
