@@ -73,9 +73,10 @@ class MainWindow(QMainWindow):
         plot1.showGrid(x=True, y=True)
         plot1.setLabel("left", "Current + Target Speed", units="rpm")
         plot1.setLabel("bottom", "Sample")
+        plot1.addLegend()
 
-        curve1_a = plot1.plot(pen="r")   
-        curve1_b = plot1.plot(pen="b")   
+        curve1_a = plot1.plot(pen=pg.mkPen(color="b", width=2), name="Target Speed")
+        curve1_b = plot1.plot(pen=pg.mkPen(color="r", width=2), name="Actual Speed") 
 
         self.plots["plot1"] = {
             "curves": [curve1_a, curve1_b],
@@ -88,7 +89,7 @@ class MainWindow(QMainWindow):
         plot2.setLabel("left", "DC Bus Current", units="A")
         plot2.setLabel("bottom", "Sample")
 
-        curve2 = plot2.plot(pen="r")   
+        curve2 = plot2.plot(pen=pg.mkPen(color="r", width=2))   
 
         self.plots["plot2"] = {
             "curves": [curve2],
@@ -101,7 +102,7 @@ class MainWindow(QMainWindow):
         plot3.setLabel("left", "Motor Voltage", units="V")
         plot3.setLabel("bottom", "Sample")
 
-        curve3 = plot3.plot(pen="r")   
+        curve3 = plot3.plot(pen=pg.mkPen(color="r", width=2))
 
         self.plots["plot3"] = {
             "curves": [curve3],

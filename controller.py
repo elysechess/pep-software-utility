@@ -20,10 +20,10 @@ class Controller(QObject):
         self.PACKET_SIZE = struct.calcsize(self.FORMAT)
         self.target_speed = 0
         self.idx = 0
-        self.motor_voltage_pA_vals = np.zeros(5000)
-        self.motor_voltage_pB_vals = np.zeros(5000)
-        self.motor_current_vals = np.zeros(5000)
-        self.bus_current_vals = np.zeros(5000)
+        self.motor_voltage_pB_vals = np.zeros(500)
+        self.motor_voltage_pC_vals = np.zeros(500)
+        self.motor_current_vals = np.zeros(500)
+        self.bus_current_vals = np.zeros(500)
 
         self.processing_timer = QTimer()
         self.processing_timer.timeout.connect(self._process_packets)
@@ -135,7 +135,7 @@ class Controller(QObject):
         if not self.latest_data:
             return
 
-        motor_voltage = np.sqrt(np.mean((self.motor_voltage_pA_vals - self.motor_voltage_pB_vals)**2)) 
+        motor_voltage = np.sqrt(np.mean((self.motor_voltage_pB_vals - self.motor_voltage_pC_vals)**2)) 
         motor_current = np.sqrt(np.mean(self.motor_current_vals**2))
         avg_bus_current = np.mean(self.bus_current_vals)
 
@@ -216,8 +216,8 @@ class Controller(QObject):
                     row.append(parsed[field])
             self.log_buffer.append(row)
 
-        self.idx = (self.idx + 1) % 5000
-        self.motor_voltage_pA_vals[self.idx] = parsed["Phase Voltage A"]
+        self.idx = (self.idx + 1) % 500
         self.motor_voltage_pB_vals[self.idx] = parsed["Phase Voltage B"]
+        self.motor_voltage_pC_vals[self.idx] = parsed["Phase Voltage C"]
         self.motor_current_vals[self.idx] = parsed["Phase Current A"]
         self.bus_current_vals[self.idx] = parsed["Bus Current"]
