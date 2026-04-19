@@ -3,6 +3,8 @@ from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile, QTimer
 import pyqtgraph as pg
 import numpy as np
+import os
+import sys
 import serial.tools.list_ports
 
 class UiLoader(QUiLoader):
@@ -52,8 +54,13 @@ class MainWindow(QMainWindow):
             12: (self.ui.FW12, "MC OC"),
         }
 
+    def resource_path(self, filename):
+        base_path = getattr(sys, '_MEIPASS', os.path.dirname(__file__))
+        return os.path.join(base_path, filename)
+
     def _load_ui(self):
-        file = QFile("utility.ui")
+        ui_path = self.resource_path("utility.ui")
+        file = QFile(ui_path)
         file.open(QFile.ReadOnly)
 
         loader = UiLoader()         
@@ -248,9 +255,6 @@ class MainWindow(QMainWindow):
 
         mp = np.sqrt(3) * mv * mc
         self.ui.motorPower.setText(f"{mp:.2f}")
-
-        efficiency = 100 * mp / bp if mp != 0 else 0
-        self.ui.efficiency.setText(f"{efficiency:.2f}")
 
         self.ui.temperature.setText(f"{temp:.2f}")
     

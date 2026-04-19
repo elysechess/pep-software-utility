@@ -81,9 +81,6 @@ class Controller(QObject):
         packets = []
         while not self.usb.packet_queue.empty():
             packets.append(self.usb.packet_queue.get()) # Drain queue
-        if packets:
-            # print(packets)
-            pass
 
         if not packets:
             return
@@ -129,7 +126,11 @@ class Controller(QObject):
         self.logging = False
         self.first_log = True
         self.first_log_timestamp_val = 0
+        if self.log_buffer:
+            self.csv_writer.writerows(self.log_buffer)
+            self.log_buffer.clear()
         self.curr_log_file.close()
+        self.logging_data_fields = []  
 
     def _emit_ui_update(self):
         if not self.latest_data:
@@ -169,13 +170,9 @@ class Controller(QObject):
     # Order: timestamp, bus voltage (V), bus current (A), P1 voltage, P1 current, P2 voltage, P2 current, P3 voltage, P3 current, speed (rpm), temperature (degrees Celsius), fault mask, warning mask  
     def _parse_packet(self, message):
 
-        # print(message) 
         if len(message) != 64:
+            print("Length error")
             return
-
-        # if len(message) < PACKET_SIZE:
-        #     print("Incomplete packet")
-        #     return None
 
         try:
 
@@ -197,14 +194,12 @@ class Controller(QObject):
                 "Warning Mask": unpacked[12],
             }
 
-            # print(parsed)
-
         except struct.error as e:
             print("Parse error:", e)
             return None
         
         self.latest_data = parsed # For logging
-        if self.logging_data_fields:
+        if self.logging and self.logging_data_fields:
             row = []
             for field in self.logging_data_fields:
                 if field == "Timestamp":
@@ -219,5 +214,5 @@ class Controller(QObject):
         self.idx = (self.idx + 1) % 500
         self.motor_voltage_pB_vals[self.idx] = parsed["Phase Voltage B"]
         self.motor_voltage_pC_vals[self.idx] = parsed["Phase Voltage C"]
-        self.motor_current_vals[self.idx] = parsed["Phase Current A"]
+        self.motor_current_vals[self.idx] = parsed["Phase Current C"]
         self.bus_current_vals[self.idx] = parsed["Bus Current"]

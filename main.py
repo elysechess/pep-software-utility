@@ -2,7 +2,7 @@ import sys
 from PySide6.QtWidgets import QApplication
 from mainWindow import MainWindow
 from controller import Controller
-from usb import USBBackend
+from usb_conn import USBBackend
 
 def main():
     app = QApplication(sys.argv)

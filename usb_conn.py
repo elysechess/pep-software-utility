@@ -38,7 +38,6 @@ class USBBackend(QObject):
         self.connection_changed.emit(False)
 
     def send(self, message: str):
-        print("send", message.hex())
         if self.ser:
             self.ser.write(message)
 
@@ -58,8 +57,9 @@ class USBBackend(QObject):
                             try:
                                 self.packet_queue.get_nowait()
                                 self.packet_queue.put_nowait(packet) # Drop oldest
-                                print("packet dropped")
+                                print("Queue full, dropping oldest packet")
                             except:
-                                pass
+                                print("Unknown error")
+                            
             except:
                 self.connection_changed.emit(False)
